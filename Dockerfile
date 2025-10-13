@@ -18,6 +18,9 @@ RUN apk update && apk add --no-cache \
 # (Optional) Quick check to verify installs work during build
 RUN ffmpeg -version && python3 --version && python3 -c "import cv2; print('✅ OpenCV loaded', cv2.__version__)"
 
+# 🔧 FIX: Make /data writable so n8n can store credentials and settings
+RUN mkdir -p /data && chown -R node:node /data
+
 # Switch back to n8n user
 USER node
 
