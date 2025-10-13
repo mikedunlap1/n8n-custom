@@ -18,8 +18,14 @@ RUN apk update && apk add --no-cache \
 # (Optional) Quick check to verify installs work during build
 RUN ffmpeg -version && python3 --version && python3 -c "import cv2; print('✅ OpenCV loaded', cv2.__version__)"
 
-# Switch back to n8n user for runtime
+# Switch back to n8n user
 USER node
 
-# Start n8n normally
-CMD ["n8n"]
+# Set working directory (required for n8n)
+WORKDIR /home/node
+
+# Explicitly set PATH (some Render environments need this)
+ENV PATH="/usr/local/bin:/home/node/.local/bin:$PATH"
+
+# Start n8n as entrypoint command
+ENTRYPOINT ["tini", "--", "n8n"]
