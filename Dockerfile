@@ -15,11 +15,8 @@ RUN apk update && apk add --no-cache \
     zlib-dev \
     libjpeg-turbo-dev
 
-# Upgrade pip safely (avoid warnings)
-RUN pip3 install --no-cache-dir --upgrade pip
-
-# (Optional) Verify ffmpeg and python installation
-RUN ffmpeg -version && python3 --version
+# (Optional) Quick check to verify installs work during build
+RUN ffmpeg -version && python3 --version && python3 -c "import cv2; print('✅ OpenCV loaded', cv2.__version__)"
 
 # Switch back to n8n user for runtime
 USER node
