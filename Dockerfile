@@ -15,7 +15,7 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev
 
 # Install OpenCV (headless build)
-RUN pip3 install --no-cache-dir opencv-python-headless
+RUN pip3 install --no-cache-dir --break-system-packages opencv-python-headless
 
 # Switch back to the n8n user
 USER node
