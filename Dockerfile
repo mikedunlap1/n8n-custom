@@ -1,5 +1,6 @@
-# Start with the official n8n image (Alpine-based)
-FROM n8nio/n8n:latest
+# Pin the last compatible n8n 1.x image for safe recovery.
+# Do not use latest: n8n 2.x images remove apk and require a separate upgrade plan.
+FROM n8nio/n8n:1.115.3
 
 # Switch to root so we can install system packages
 USER root
