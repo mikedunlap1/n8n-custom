@@ -9,7 +9,13 @@ COPY --from=package-tools /etc/apk/keys/ /tmp/apk-keys/
 COPY --from=package-tools /etc/apk/repositories /tmp/apk-repositories
 RUN /tmp/apk.static --keys-dir /tmp/apk-keys --repositories-file /tmp/apk-repositories add --no-cache ffmpeg python3 py3-pip py3-opencv \
     && ffmpeg -version && ffprobe -version && python3 -c "import cv2,sqlite3; print(cv2.__version__)" \
-    && mkdir -p /data && chown node:node /data
+    && mkdir -p /data/videos /data/frames /home/node/videos /home/node/.ssh \
+    && chown -R node:node /data /home/node/videos /home/node/.ssh \
+    && chmod 0700 /home/node/.ssh
+# Keep the tested heap budget and existing video workflow capabilities.
+ENV NODE_OPTIONS="--max-old-space-size=320" \
+    NODES_EXCLUDE='["n8n-nodes-base.localFileTrigger"]' \
+    N8N_RESTRICT_FILE_ACCESS_TO="/data;/home/node/videos"
 USER node
 WORKDIR /home/node
 # Retain the official image entrypoint and task-runner setup.
