@@ -1,35 +1,21 @@
-# Pin the last compatible n8n 1.x image for safe recovery.
-# Do not use latest: n8n 2.x images remove apk and require a separate upgrade plan.
-FROM n8nio/n8n:1.115.3
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS package-tools
+RUN apk add --no-cache apk-tools-static
 
-# Switch to root so we can install system packages
+FROM n8nio/n8n:2.48.7@sha256:fabce3e9678a07d2dde83bd8f5124017f3ec457d0a3fc6b63bb4cec465d63861
 USER root
-
-# Update and install ffmpeg, python, pip, and prebuilt OpenCV
-RUN apk update && apk add --no-cache \
-    ffmpeg \
-    python3 \
-    py3-pip \
-    py3-opencv \
-    build-base \
-    jpeg-dev \
-    zlib-dev \
-    libjpeg-turbo-dev
-
-# (Optional) Quick check to verify installs work during build
-RUN ffmpeg -version && python3 --version && python3 -c "import cv2; print('✅ OpenCV loaded', cv2.__version__)"
-
-# 🔧 FIX: Make /data writable so n8n can store credentials and settings
-RUN mkdir -p /data && chown -R node:node /data
-
-# Switch back to n8n user
+# The hardened runtime omits apk. Use a matching Alpine package tool during build.
+COPY --from=package-tools /sbin/apk.static /tmp/apk.static
+COPY --from=package-tools /etc/apk/keys/ /tmp/apk-keys/
+COPY --from=package-tools /etc/apk/repositories /tmp/apk-repositories
+RUN /tmp/apk.static --keys-dir /tmp/apk-keys --repositories-file /tmp/apk-repositories add --no-cache ffmpeg python3 py3-pip py3-opencv \
+    && ffmpeg -version && ffprobe -version && python3 -c "import cv2,sqlite3; print(cv2.__version__)" \
+    && mkdir -p /data/videos /data/frames /home/node/videos /home/node/.ssh \
+    && chown -R node:node /data /home/node/videos /home/node/.ssh \
+    && chmod 0700 /home/node/.ssh
+# Keep the tested heap budget and existing video workflow capabilities.
+ENV NODE_OPTIONS="--max-old-space-size=320" \
+    NODES_EXCLUDE='["n8n-nodes-base.localFileTrigger"]' \
+    N8N_RESTRICT_FILE_ACCESS_TO="/data;/home/node/videos"
 USER node
-
-# Set working directory (required for n8n)
 WORKDIR /home/node
-
-# Explicitly set PATH (some Render environments need this)
-ENV PATH="/usr/local/bin:/home/node/.local/bin:$PATH"
-
-# Start n8n as entrypoint command
-ENTRYPOINT ["tini", "--", "n8n"]
+# Retain the official image entrypoint and task-runner setup.
